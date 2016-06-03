@@ -175,6 +175,7 @@ module.exports['Tessel.prototype.connectToNetwork'] = {
     this.commitWirelessCredentials = this.sandbox.spy(commands, 'commitWirelessCredentials');
     this.reconnectWifi = this.sandbox.spy(commands, 'reconnectWifi');
     this.getWifiInfo = this.sandbox.spy(commands, 'getWifiInfo');
+    this.accessPointDisable = this.sandbox.spy(commands, 'turnAccessPointOff');
     this.tessel = TesselSimulator();
 
     done();
@@ -185,7 +186,7 @@ module.exports['Tessel.prototype.connectToNetwork'] = {
     done();
   },
   noPassword: function(test) {
-    test.expect(8);
+    test.expect(9);
     var creds = {
       ssid: 'tank',
       password: undefined
@@ -219,6 +220,7 @@ module.exports['Tessel.prototype.connectToNetwork'] = {
         test.ok(this.setNetworkSSID.lastCall.calledWith(creds.ssid));
         test.ok(this.setNetworkEncryption.lastCall.calledWith('none'));
         test.ok(this.getWifiInfo.callCount, 1);
+        test.ok(this.accessPointDisable.callCount, 1);
         test.done();
       })
       .catch(error => {
@@ -227,7 +229,7 @@ module.exports['Tessel.prototype.connectToNetwork'] = {
       });
   },
   properCredentials: function(test) {
-    test.expect(9);
+    test.expect(10);
     var creds = {
       ssid: 'tank',
       password: 'fish'
@@ -262,6 +264,7 @@ module.exports['Tessel.prototype.connectToNetwork'] = {
         test.ok(this.setNetworkPassword.lastCall.calledWith(creds.password));
         test.ok(this.setNetworkEncryption.lastCall.calledWith('psk2'));
         test.ok(this.getWifiInfo.callCount, 1);
+        test.ok(this.accessPointDisable.callCount, 1);
         test.done();
       })
       .catch(error => {
@@ -271,7 +274,7 @@ module.exports['Tessel.prototype.connectToNetwork'] = {
   },
 
   properCredentialsWithSecurity: function(test) {
-    test.expect(9);
+    test.expect(10);
     var creds = {
       ssid: 'tank',
       password: 'fish',
@@ -307,6 +310,7 @@ module.exports['Tessel.prototype.connectToNetwork'] = {
         test.ok(this.setNetworkPassword.lastCall.calledWith(creds.password));
         test.ok(this.setNetworkEncryption.lastCall.calledWith(creds.security));
         test.ok(this.getWifiInfo.callCount, 1);
+        test.ok(this.accessPointDisable.callCount, 1);
         test.done();
       })
       .catch(error => {
@@ -316,7 +320,7 @@ module.exports['Tessel.prototype.connectToNetwork'] = {
   },
 
   connectionFails: function(test) {
-    test.expect(9);
+    test.expect(10);
     var creds = {
       ssid: 'tank',
       password: 'not_gonna_work'
@@ -355,12 +359,13 @@ module.exports['Tessel.prototype.connectToNetwork'] = {
         test.ok(this.setNetworkPassword.lastCall.calledWith(creds.password));
         test.ok(this.setNetworkEncryption.lastCall.calledWith('psk2'));
         test.ok(this.getWifiInfo.callCount, 1);
+        test.ok(this.accessPointDisable.callCount, 1);
         test.done();
       });
   },
 
   connectionUnverifiable: function(test) {
-    test.expect(10);
+    test.expect(11);
     var creds = {
       ssid: 'tank',
       password: 'not_gonna_work'
@@ -404,13 +409,14 @@ module.exports['Tessel.prototype.connectToNetwork'] = {
         test.ok(this.setNetworkPassword.lastCall.calledWith(creds.password));
         test.ok(this.setNetworkEncryption.lastCall.calledWith('psk2'));
         test.ok(this.getWifiInfo.callCount, 1);
+        test.ok(this.accessPointDisable.callCount, 1);
         test.done();
       });
   },
   // Sometimes the keyword for success (signal) is not in the first batch
   // of stdout data
   batchedResponse: function(test) {
-    test.expect(9);
+    test.expect(10);
     var creds = {
       ssid: 'tank',
       password: 'should work'
@@ -447,6 +453,7 @@ module.exports['Tessel.prototype.connectToNetwork'] = {
         test.ok(this.setNetworkPassword.lastCall.calledWith(creds.password));
         test.ok(this.setNetworkEncryption.lastCall.calledWith('psk2'));
         test.ok(this.getWifiInfo.callCount, 1);
+        test.ok(this.accessPointDisable.callCount, 1);
         test.done();
       })
       .catch((error) => {

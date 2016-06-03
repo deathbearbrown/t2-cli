@@ -13,7 +13,7 @@ exports['Tessel.prototype.createAccessPoint'] = {
     this.setLanNetworkNetmask = this.sandbox.spy(commands, 'setLanNetworkNetmask');
     this.commitNetwork = this.sandbox.spy(commands, 'commitNetwork');
     this.setAccessPoint = this.sandbox.spy(commands, 'setAccessPoint');
-    this.getAccessPointSSID = this.sandbox.spy(commands, 'getAccessPointSSID');
+    this.getAccessPoint = this.sandbox.spy(commands, 'getAccessPoint');
     this.setAccessPointDevice = this.sandbox.spy(commands, 'setAccessPointDevice');
     this.setAccessPointNetwork = this.sandbox.spy(commands, 'setAccessPointNetwork');
     this.setAccessPointMode = this.sandbox.spy(commands, 'setAccessPointMode');
@@ -24,8 +24,15 @@ exports['Tessel.prototype.createAccessPoint'] = {
     this.reconnectWifi = this.sandbox.spy(commands, 'reconnectWifi');
     this.reconnectDnsmasq = this.sandbox.spy(commands, 'reconnectDnsmasq');
     this.reconnectDhcp = this.sandbox.spy(commands, 'reconnectDhcp');
+    this.turnOnWifi = this.sandbox.spy(commands, 'turnOnWifi');
 
     this.tessel = TesselSimulator();
+    // These are needed because the sheer number of commands run within
+    // each test exceeds the default maximum number of listeners. This
+    // is only an issue with tests because we re-use the same remote
+    // process simulator across all command calls
+    this.tessel._rps.stdout.setMaxListeners(100);
+    this.tessel._rps.stderr.setMaxListeners(100);
 
     done();
   },
@@ -37,14 +44,14 @@ exports['Tessel.prototype.createAccessPoint'] = {
   },
 
   newAccessPoint: function(test) {
-    test.expect(20);
+    test.expect(22);
     var creds = {
       ssid: 'test',
       pass: 'test-password',
       security: 'psk2'
     };
 
-    // Test is expecting two closes...;
+    // Immediately close any opened connections
     this.tessel._rps.on('control', () => {
       setImmediate(() => {
         this.tessel._rps.emit('close');
@@ -67,7 +74,7 @@ exports['Tessel.prototype.createAccessPoint'] = {
 
     this.tessel.createAccessPoint(creds)
       .then(() => {
-        test.equal(this.getAccessPointSSID.callCount, 1);
+        test.equal(this.getAccessPoint.callCount, 1);
         test.equal(this.setAccessPoint.callCount, 1);
         test.equal(this.setAccessPointDevice.callCount, 1);
         test.equal(this.setAccessPointNetwork.callCount, 1);
@@ -81,9 +88,11 @@ exports['Tessel.prototype.createAccessPoint'] = {
         test.equal(this.setLanNetworkIP.callCount, 1);
         test.equal(this.setLanNetworkNetmask.callCount, 1);
         test.equal(this.commitNetwork.callCount, 1);
-        test.equal(this.reconnectWifi.callCount, 1);
+        test.equal(this.reconnectWifi.callCount, 2);
         test.equal(this.reconnectDnsmasq.callCount, 1);
         test.equal(this.reconnectDhcp.callCount, 1);
+        test.equal(this.turnOnWifi.callCount, 1);
+        test.ok(this.turnOnWifi.lastCall.calledWith(false));
         test.ok(this.setAccessPointSSID.lastCall.calledWith(creds.ssid));
         test.ok(this.setAccessPointPassword.lastCall.calledWith(creds.pass));
         test.ok(this.setAccessPointSecurity.lastCall.calledWith(creds.security));
@@ -97,7 +106,7 @@ exports['Tessel.prototype.createAccessPoint'] = {
   },
 
   noPasswordNoSecurity: function(test) {
-    test.expect(9);
+    test.expect(11);
     var creds = {
       ssid: 'test',
       pass: undefined,
@@ -113,13 +122,15 @@ exports['Tessel.prototype.createAccessPoint'] = {
 
     this.tessel.createAccessPoint(creds)
       .then(() => {
-        test.equal(this.getAccessPointSSID.callCount, 1);
+        test.equal(this.getAccessPoint.callCount, 1);
         test.equal(this.setAccessPointSSID.callCount, 1);
         test.equal(this.setAccessPointPassword.callCount, 0);
         test.equal(this.setAccessPointSecurity.callCount, 1);
-        test.equal(this.reconnectWifi.callCount, 1);
+        test.equal(this.reconnectWifi.callCount, 2);
         test.equal(this.reconnectDnsmasq.callCount, 1);
         test.equal(this.reconnectDhcp.callCount, 1);
+        test.equal(this.turnOnWifi.callCount, 1);
+        test.ok(this.turnOnWifi.lastCall.calledWith(false));
         test.ok(this.setAccessPointSSID.lastCall.calledWith(creds.ssid));
         test.ok(this.setAccessPointSecurity.lastCall.calledWith('none'));
         test.done();
@@ -131,7 +142,7 @@ exports['Tessel.prototype.createAccessPoint'] = {
   },
 
   properCredentials: function(test) {
-    test.expect(10);
+    test.expect(12);
     var creds = {
       ssid: 'test',
       pass: 'test-password',
@@ -147,13 +158,15 @@ exports['Tessel.prototype.createAccessPoint'] = {
 
     this.tessel.createAccessPoint(creds)
       .then(() => {
-        test.equal(this.getAccessPointSSID.callCount, 1);
+        test.equal(this.getAccessPoint.callCount, 1);
         test.equal(this.setAccessPointSSID.callCount, 1);
         test.equal(this.setAccessPointPassword.callCount, 1);
         test.equal(this.setAccessPointSecurity.callCount, 1);
-        test.equal(this.reconnectWifi.callCount, 1);
+        test.equal(this.reconnectWifi.callCount, 2);
         test.equal(this.reconnectDnsmasq.callCount, 1);
         test.equal(this.reconnectDhcp.callCount, 1);
+        test.equal(this.turnOnWifi.callCount, 1);
+        test.ok(this.turnOnWifi.lastCall.calledWith(false));
         test.ok(this.setAccessPointSSID.lastCall.calledWith(creds.ssid));
         test.ok(this.setAccessPointPassword.lastCall.calledWith(creds.pass));
         test.ok(this.setAccessPointSecurity.lastCall.calledWith(creds.security));
@@ -166,7 +179,7 @@ exports['Tessel.prototype.createAccessPoint'] = {
   },
 
   passwordNoSecurity: function(test) {
-    test.expect(10);
+    test.expect(12);
     var creds = {
       ssid: 'test',
       pass: 'test-password',
@@ -182,13 +195,15 @@ exports['Tessel.prototype.createAccessPoint'] = {
 
     this.tessel.createAccessPoint(creds)
       .then(() => {
-        test.equal(this.getAccessPointSSID.callCount, 1);
+        test.equal(this.getAccessPoint.callCount, 1);
         test.equal(this.setAccessPointSSID.callCount, 1);
         test.equal(this.setAccessPointPassword.callCount, 1);
         test.equal(this.setAccessPointSecurity.callCount, 1);
-        test.equal(this.reconnectWifi.callCount, 1);
+        test.equal(this.reconnectWifi.callCount, 2);
         test.equal(this.reconnectDnsmasq.callCount, 1);
         test.equal(this.reconnectDhcp.callCount, 1);
+        test.equal(this.turnOnWifi.callCount, 1);
+        test.ok(this.turnOnWifi.lastCall.calledWith(false));
         test.ok(this.setAccessPointSSID.lastCall.calledWith(creds.ssid));
         test.ok(this.setAccessPointPassword.lastCall.calledWith(creds.pass));
         test.ok(this.setAccessPointSecurity.lastCall.calledWith('psk2'));
@@ -236,7 +251,7 @@ exports['Tessel.prototype.enableAccessPoint'] = {
       ip: '192.168.200.1'
     };
 
-    // Test is expecting two closes...;
+
     this.tessel._rps.on('control', (command) => {
       if (command.toString() === 'uci show wireless.@wifi-iface[1]') {
         var info = new Buffer(tags.stripIndent `
